@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Real-time Notification Demo</title>
+<style>body{font-family:system-ui;max-width:720px;margin:2rem auto;padding:0 1rem}input,button{padding:.5rem;margin:.2rem}
+#log{background:#111;color:#0f0;padding:1rem;height:320px;overflow:auto;font:13px monospace;border-radius:6px}</style></head>
+<body>
+<h2>Socket.IO Notification Demo</h2>
+<p>Log in as a seller / customer / admin, keep this page open, then place or update orders from Postman.</p>
+<input id="email" placeholder="email" value="seller1@shop.com"><input id="pw" type="password" placeholder="password" value="Seller@123">
+<button onclick="go()">Login &amp; Connect</button>
+<div id="log"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const log = (m) => { const d = document.getElementById('log'); d.innerHTML += `[${new Date().toLocaleTimeString()}] ${m}<br>`; d.scrollTop = d.scrollHeight; };
+async function go() {
+  const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.value, password: pw.value }) });
+  const j = await r.json();
+  if (!r.ok) return log('Login failed: ' + j.message);
+  const socket = io({ auth: { token: j.data.accessToken } });
+  socket.on('connect', () => log('Socket connected'));
+  socket.on('connect_error', (e) => log('Connection error: ' + e.message));
+  ['connected', 'order:placed', 'order:statusChanged', 'stock:low'].forEach((ev) =>
+    socket.on(ev, (p) => log(`<b>${ev}</b> ${JSON.stringify(p)}`)));
+}
+</script></body></html>
